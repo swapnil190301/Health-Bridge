@@ -7,7 +7,7 @@ const LandingPage = () => {
 
   return (
     <div className="container">
-      <img src="/Logo.jpg" alt="Health Bridge Clinic" className="logo" />
+      <img src="https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNjhlZmUxNzE4ZGJjODE5MWFmNmJhMzcyYzYzYzc1OWQ6ZmlsZV8wMDAwMDAwMDg2MTQ2MjA2YjQyMGQ1MWQ4MGY5YzFlMCIsInRzIjoiMjAzNzYiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6ImJlY2UwOTlhNjk2YjI2MDdmMGIwN2ZmMjJlMzYxNDYzZWYwZWZiOGE4MjYxMDg2NzlmN2NhODMxOTJhNjljZjYiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcCI6bnVsbCwibWEiOm51bGx9" alt="Health Bridge Clinic" className="logo" />
 
       <div className="button-container">
         <button className="btn" onClick={() => navigate("/signin")}>
