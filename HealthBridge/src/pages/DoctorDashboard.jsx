@@ -1,19 +1,38 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./css/DoctorDashboard.css";
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/signin");
   };
 
+  const closeMenu = () => setMenuOpen(false);
+
+  const getMenuClass = ({ isActive }) =>
+    isActive ? "menu-item active" : "menu-item";
+
   return (
     <div className="dashboard-wrapper">
-      <aside className="sidebar">
+      <button
+        className={`mobile-menu-btn ${menuOpen ? "active" : ""}`}
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Toggle menu"
+        aria-expanded={menuOpen}
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      {menuOpen && <div className="mobile-overlay" onClick={closeMenu}></div>}
+
+      <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
         <div className="sidebar-content">
           <div className="sidebar-top">
             <div className="logo-circle">
@@ -31,18 +50,37 @@ const DoctorDashboard = () => {
           </div>
 
           <nav className="menu">
-            <Link to="/dashboard" className="menu-item active">
+            <NavLink
+              to="/dashboard"
+              className={getMenuClass}
+              onClick={closeMenu}
+            >
               Home
-            </Link>
-            <Link to="/about-doctor" className="menu-item">
+            </NavLink>
+
+            <NavLink
+              to="/about-doctor"
+              className={getMenuClass}
+              onClick={closeMenu}
+            >
               Doctor Profile
-            </Link>
-            <Link to="/schedule" className="menu-item">
+            </NavLink>
+
+            <NavLink
+              to="/schedule"
+              className={getMenuClass}
+              onClick={closeMenu}
+            >
               Schedule
-            </Link>
-            <Link to="/appointment" className="menu-item">
+            </NavLink>
+
+            <NavLink
+              to="/appointment"
+              className={getMenuClass}
+              onClick={closeMenu}
+            >
               Appointments
-            </Link>
+            </NavLink>
           </nav>
         </div>
 
@@ -63,10 +101,12 @@ const DoctorDashboard = () => {
         <section className="hero-card">
           <div className="hero-text">
             <span className="hero-badge">Smart Appointment Management</span>
+
             <h2>Make your schedule clean, fast, and organized.</h2>
+
             <p>
               View appointments, update your available time slots, and keep your
-              practice running smoothly with a modern dashboard.
+              practice running smoothly with a modern premium dashboard.
             </p>
 
             <div className="btn-group">
@@ -87,6 +127,7 @@ const DoctorDashboard = () => {
           </div>
 
           <div className="hero-image-card">
+            <div className="hero-image-glow"></div>
             <img
               src="/doctor.jpg"
               alt="Doctor Illustration"
