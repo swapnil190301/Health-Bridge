@@ -33,6 +33,14 @@ const LandingPage = () => {
             Admin Login
           </button>
 
+          <button className="btn" onClick={() => navigate("/admin-register")}>
+            Admin Register
+          </button>
+
+          <button className="btn" onClick={() => navigate("/doctor-signin")}>
+            Doctor Sign In
+          </button>
+
           <button className="btn" onClick={() => navigate("/doctor-register")}>
             Doctor Register
           </button>

@@ -3,7 +3,10 @@ import { supabase } from "../supabaseClient";
 import "./css/AdminDashboard.css";
 
 const AdminDashboard = () => {
-  const [doctor, setDoctor] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+
   const [appointments, setAppointments] = useState([]);
   const [slots, setSlots] = useState([]);
   const [slotDate, setSlotDate] = useState("");
@@ -16,59 +19,96 @@ const AdminDashboard = () => {
   const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
-    fetchAdminData();
+    fetchDoctors();
   }, []);
 
-  const fetchAdminData = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  useEffect(() => {
+    if (selectedDoctorId) {
+      fetchDoctorData(selectedDoctorId);
+      fetchSlots(selectedDoctorId);
+    }
+  }, [selectedDoctorId]);
 
-    if (!user) return;
+  const fetchDoctors = async () => {
+    const { data, error } = await supabase
+      .from("doctors")
+      .select("*")
+      .order("full_name", { ascending: true });
 
+    if (!error && data) {
+      setDoctors(data);
+      if (data.length > 0) {
+        setSelectedDoctorId(data[0].id);
+      }
+    } else {
+      console.error(error);
+    }
+  };
+
+  const fetchSlots = async (doctorId = null) => {
+    let query = supabase
+      .from("doctor_slots")
+      .select(`
+        id,
+        doctor_id,
+        slot_date,
+        slot_time,
+        is_booked,
+        doctors(full_name)
+      `)
+      .order("slot_date", { ascending: true })
+      .order("slot_time", { ascending: true });
+
+    if (doctorId) {
+      query = query.eq("doctor_id", doctorId);
+    }
+
+    const { data, error } = await query;
+
+    if (!error) {
+      setSlots(data || []);
+    } else {
+      console.error("Error fetching slots:", error.message);
+    }
+  };
+
+  const fetchDoctorData = async (doctorId) => {
     const { data: doctorData, error: doctorError } = await supabase
       .from("doctors")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", doctorId)
       .single();
 
     if (!doctorError && doctorData) {
-      setDoctor(doctorData);
+      setSelectedDoctor(doctorData);
       setFullName(doctorData.full_name || "");
-      setSpecialization(doctorData.specialization || doctorData.specialty || "");
+      setSpecialization(
+        doctorData.specialization || doctorData.specialty || ""
+      );
       setBio(doctorData.bio || "");
       setImageUrl(doctorData.image_url || "");
     }
 
-    const { data: slotData, error: slotError } = await supabase
-      .from("doctor_slots")
-      .select("*")
-      .eq("doctor_id", user.id)
-      .order("slot_date", { ascending: true })
-      .order("slot_time", { ascending: true });
-
-    if (!slotError) setSlots(slotData || []);
-
     const { data: appointmentData, error: appointmentError } = await supabase
       .from("appointments")
       .select("*")
-      .eq("doctor_id", user.id)
+      .eq("doctor_id", doctorId)
       .order("appointment_date", { ascending: true })
       .order("appointment_time", { ascending: true });
 
-    if (!appointmentError) setAppointments(appointmentData || []);
+    if (!appointmentError) {
+      setAppointments(appointmentData || []);
+    } else {
+      console.error("Error fetching appointments:", appointmentError.message);
+    }
   };
 
   const updateProfile = async (e) => {
     e.preventDefault();
     setMessage("");
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setMessage("Please login again.");
+    if (!selectedDoctorId) {
+      setMessage("Please select a doctor.");
       return;
     }
 
@@ -80,7 +120,7 @@ const AdminDashboard = () => {
         bio,
         image_url: imageUrl,
       })
-      .eq("id", user.id);
+      .eq("id", selectedDoctorId);
 
     if (error) {
       setMessage(error.message);
@@ -88,24 +128,20 @@ const AdminDashboard = () => {
     }
 
     setMessage("Doctor profile updated successfully.");
-    fetchAdminData();
+    fetchDoctorData(selectedDoctorId);
   };
 
   const addSlot = async (e) => {
     e.preventDefault();
     setMessage("");
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setMessage("Please login again.");
+    if (!selectedDoctorId) {
+      setMessage("Please select a doctor.");
       return;
     }
 
     const { error } = await supabase.from("doctor_slots").insert({
-      doctor_id: user.id,
+      doctor_id: selectedDoctorId,
       slot_date: slotDate,
       slot_time: slotTime,
       is_booked: false,
@@ -119,7 +155,7 @@ const AdminDashboard = () => {
     setMessage("Slot added successfully.");
     setSlotDate("");
     setSlotTime("");
-    fetchAdminData();
+    fetchSlots(selectedDoctorId);
   };
 
   const deleteSlot = async (slotId) => {
@@ -128,7 +164,11 @@ const AdminDashboard = () => {
       .delete()
       .eq("id", slotId);
 
-    if (!error) fetchAdminData();
+    if (!error) {
+      fetchSlots(selectedDoctorId);
+    } else {
+      console.error("Error deleting slot:", error.message);
+    }
   };
 
   const logout = async () => {
@@ -154,13 +194,9 @@ const AdminDashboard = () => {
         <header className="dashboard-hero">
           <div className="hero-text">
             <span className="hero-badge">Health Bridge</span>
-            <h1>Doctor Admin Dashboard</h1>
-            <p>
-              Manage your profile, clinic availability, and booked appointments
-              in one clean place.
-            </p>
+            <h1>Admin Dashboard</h1>
+            <p>Manage doctors, schedules, and appointments.</p>
           </div>
-
           <div className="hero-actions">
             <button className="logout-btn" onClick={logout}>
               Logout
@@ -168,41 +204,38 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        {doctor && (
+        <section className="premium-card">
+          <div className="section-title">
+            <h3>Select Doctor</h3>
+          </div>
+          <select
+            className="doctor-select"
+            value={selectedDoctorId}
+            onChange={(e) => setSelectedDoctorId(e.target.value)}
+          >
+            {doctors.map((doc) => (
+              <option key={doc.id} value={doc.id}>
+                {doc.full_name}
+              </option>
+            ))}
+          </select>
+        </section>
+
+        {selectedDoctor && (
           <section className="premium-card profile-card">
             <div className="profile-card-top">
               <img
                 className="profile-avatar"
-                src={doctor.image_url || "/doctor.jpg"}
+                src={selectedDoctor.image_url || "/doctor.jpg"}
                 alt="Doctor"
               />
-
               <div className="profile-heading">
-                <h2>{doctor.full_name || "Doctor Name"}</h2>
-                <p>{doctor.specialization || doctor.specialty || "Specialist"}</p>
-              </div>
-            </div>
-
-            <div className="profile-info-list">
-              <div className="profile-info-item">
-                <span className="profile-info-label">Email</span>
-                <span className="profile-info-value">
-                  {doctor.email || "Not added"}
-                </span>
-              </div>
-
-              <div className="profile-info-item">
-                <span className="profile-info-label">Specialization</span>
-                <span className="profile-info-value">
-                  {doctor.specialization || doctor.specialty || "Not added"}
-                </span>
-              </div>
-
-              <div className="profile-info-item">
-                <span className="profile-info-label">Bio</span>
-                <span className="profile-info-value">
-                  {doctor.bio || "No bio added yet."}
-                </span>
+                <h2>{selectedDoctor.full_name}</h2>
+                <p>
+                  {selectedDoctor.specialization ||
+                    selectedDoctor.specialty ||
+                    "Specialist"}
+                </p>
               </div>
             </div>
           </section>
@@ -211,9 +244,7 @@ const AdminDashboard = () => {
         <section className="premium-card form-card">
           <div className="section-title">
             <h3>Update Doctor Details</h3>
-            <p>Keep your patient-facing information clear and professional.</p>
           </div>
-
           <form className="profile-form" onSubmit={updateProfile}>
             <input
               type="text"
@@ -222,7 +253,6 @@ const AdminDashboard = () => {
               onChange={(e) => setFullName(e.target.value)}
               required
             />
-
             <input
               type="text"
               placeholder="Specialization"
@@ -230,14 +260,12 @@ const AdminDashboard = () => {
               onChange={(e) => setSpecialization(e.target.value)}
               required
             />
-
             <input
               type="text"
               placeholder="Image URL"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
             />
-
             <textarea
               placeholder="Write doctor bio / description"
               value={bio}
@@ -245,12 +273,10 @@ const AdminDashboard = () => {
               rows="5"
               required
             />
-
             <button type="submit" className="primary-btn">
               Save Profile
             </button>
           </form>
-
           {message && <p className="status-message">{message}</p>}
         </section>
 
@@ -259,7 +285,6 @@ const AdminDashboard = () => {
             <h3>Add Schedule Slot</h3>
             <p>Add available time slots for patient booking.</p>
           </div>
-
           <form className="slot-form" onSubmit={addSlot}>
             <input
               type="date"
@@ -282,9 +307,7 @@ const AdminDashboard = () => {
         <section className="premium-card">
           <div className="section-title">
             <h3>Available Slots</h3>
-            <p>Your upcoming bookable schedule.</p>
           </div>
-
           <div className="slot-list">
             {slots.length === 0 ? (
               <p className="empty-text">No slots added yet.</p>
@@ -294,10 +317,17 @@ const AdminDashboard = () => {
                   <div className="slot-left">
                     <div className="slot-date">{slot.slot_date}</div>
                     <div className="slot-time">{formatTime(slot.slot_time)}</div>
+                    <div className="slot-doctor">
+                      Dr. {slot.doctors?.full_name || "Unknown"}
+                    </div>
                   </div>
 
                   <div className="slot-right">
-                    <span className={`slot-status ${slot.is_booked ? "booked" : ""}`}>
+                    <span
+                      className={`slot-status ${
+                        slot.is_booked ? "booked" : ""
+                      }`}
+                    >
                       {slot.is_booked ? "Booked" : "Available"}
                     </span>
 
@@ -320,9 +350,7 @@ const AdminDashboard = () => {
         <section className="premium-card appointments-card">
           <div className="section-title">
             <h3>Booked Appointments</h3>
-            <p>All scheduled patient appointments.</p>
           </div>
-
           <div className="appointments-list">
             {appointments.length === 0 ? (
               <p className="empty-text">No appointments booked yet.</p>
@@ -333,28 +361,14 @@ const AdminDashboard = () => {
                     <div className="appointment-cell">
                       <span className="appointment-label">Patient</span>
                       <span className="appointment-value">
-                        {appt.patients_name || appt.patient_name || "Not added"}
-                      </span>
-                    </div>
-
-                    <div className="appointment-cell">
-                      <span className="appointment-label">Age</span>
-                      <span className="appointment-value">
-                        {appt.patient_age || appt.patients_age || "Not added"}
-                      </span>
-                    </div>
-
-                    <div className="appointment-cell">
-                      <span className="appointment-label">Illness</span>
-                      <span className="appointment-value">
-                        {appt.illness || "Not added"}
+                        {appt.patient_name || appt.patients_name || "Not added"}
                       </span>
                     </div>
 
                     <div className="appointment-cell">
                       <span className="appointment-label">Date</span>
                       <span className="appointment-value">
-                        {appt.appointment_date || "Not added"}
+                        {appt.appointment_date}
                       </span>
                     </div>
 

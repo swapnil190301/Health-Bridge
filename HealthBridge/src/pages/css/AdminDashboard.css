@@ -42,16 +42,19 @@ body {
   max-width: 560px;
 }
 
+/* AdminDashboard.css */
 .hero-badge {
   display: inline-block;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  margin-bottom: 12px;
+  padding: 8px 18px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff; /* White text for visibility */
+  background: rgba(255, 255, 255, 0.2); /* Semi-transparent white */
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 25px;
+  backdrop-filter: blur(8px); /* Glass effect */
+  letter-spacing: 0.5px;
 }
 
 .dashboard-hero h1 {

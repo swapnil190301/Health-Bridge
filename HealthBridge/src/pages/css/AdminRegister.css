@@ -7,7 +7,7 @@ body {
   color: #1e293b;
 }
 
-.doctor-register-page {
+.admin-register-page {
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -19,7 +19,7 @@ body {
     radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.08), transparent 24%);
 }
 
-.doctor-register-card {
+.admin-register-card {
   width: 100%;
   max-width: 470px;
   background: rgba(255, 255, 255, 0.92);
@@ -31,7 +31,7 @@ body {
   text-align: center;
 }
 
-.doctor-register-badge {
+.admin-register-badge {
   display: inline-block;
   background: linear-gradient(135deg, #38bdf8, #2563eb);
   color: white;
@@ -43,20 +43,20 @@ body {
   letter-spacing: 0.4px;
 }
 
-.doctor-register-title {
+.admin-register-title {
   font-size: 34px;
   font-weight: 800;
   margin-bottom: 28px;
   color: #0f172a;
 }
 
-.doctor-register-form {
+.admin-register-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.doctor-register-input {
+.admin-register-input {
   width: 100%;
   padding: 16px;
   border-radius: 16px;
@@ -68,18 +68,18 @@ body {
   box-sizing: border-box;
 }
 
-.doctor-register-input::placeholder {
+.admin-register-input::placeholder {
   color: #94a3b8;
 }
 
-.doctor-register-input:focus {
+.admin-register-input:focus {
   outline: none;
   border-color: #60a5fa;
   background: white;
   box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
 }
 
-.doctor-register-btn {
+.admin-register-btn {
   margin-top: 10px;
   padding: 16px;
   border-radius: 18px;
@@ -93,11 +93,11 @@ body {
   box-shadow: 0 14px 28px rgba(37, 99, 235, 0.2);
 }
 
-.doctor-register-btn:hover {
+.admin-register-btn:hover {
   transform: translateY(-2px);
 }
 
-.doctor-register-error {
+.admin-register-error {
   margin-top: 14px;
   color: #dc2626;
   background: #fef2f2;
@@ -106,7 +106,7 @@ body {
   border-radius: 12px;
 }
 
-.doctor-register-success {
+.admin-register-success {
   margin-top: 14px;
   color: #16a34a;
   background: #f0fdf4;
@@ -116,12 +116,12 @@ body {
 }
 
 @media (max-width: 768px) {
-  .doctor-register-card {
+  .admin-register-card {
     padding: 30px 22px;
     border-radius: 24px;
   }
 
-  .doctor-register-title {
+  .admin-register-title {
     font-size: 30px;
   }
 }

@@ -1,158 +1,112 @@
-import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useNavigate } from "react-router-dom";
 import "./css/DoctorDashboard.css";
 
 const DoctorDashboard = () => {
+  const [appointments, setAppointments] = useState([]);
+  const [doctorName, setDoctorName] = useState("");
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/signin");
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const fetchAppointments = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      navigate("/doctor-signin");
+      return;
+    }
+
+    // ✅ Fetch doctor name
+    const { data: doctorData } = await supabase
+      .from("doctors")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+
+    if (doctorData) {
+      setDoctorName(doctorData.full_name);
+    }
+
+    // ✅ Fetch appointments + patient details
+    const { data, error } = await supabase
+      .from("appointments")
+      .select(`
+        id,
+        date,
+        time,
+        status,
+        reason,
+        patients (
+          full_name,
+          email,
+          phone
+        )
+      `)
+      .eq("doctor_id", user.id);
+
+    if (error) {
+      console.error("Error fetching appointments:", error);
+    } else {
+      setAppointments(data);
+    }
   };
 
-  const closeMenu = () => setMenuOpen(false);
-
-  const getMenuClass = ({ isActive }) =>
-    isActive ? "menu-item active" : "menu-item";
+  // ✅ Logout OUTSIDE fetch
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/doctor-signin");
+  };
 
   return (
-    <div className="dashboard-wrapper">
-      <button
-        className={`mobile-menu-btn ${menuOpen ? "active" : ""}`}
-        onClick={() => setMenuOpen(!menuOpen)}
-        aria-label="Toggle menu"
-        aria-expanded={menuOpen}
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
-      {menuOpen && <div className="mobile-overlay" onClick={closeMenu}></div>}
-
-      <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
-        <div className="sidebar-content">
-          <div className="sidebar-top">
-            <div className="logo-circle">
-              <img
-                src="/logo.png"
-                alt="Health Bridge Logo"
-                className="logo-img"
-              />
-            </div>
-
-            <div className="brand-text">
-              <h2>Health Bridge</h2>
-              <p>Doctor Panel</p>
-            </div>
-          </div>
-
-          <nav className="menu">
-            <NavLink
-              to="/dashboard"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
-              Home
-            </NavLink>
-
-            <NavLink
-              to="/about-doctor"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
-              Doctor Profile
-            </NavLink>
-
-            <NavLink
-              to="/schedule"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
-              Schedule
-            </NavLink>
-
-            <NavLink
-              to="/appointment"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
-              Appointments
-            </NavLink>
-          </nav>
-        </div>
-
+    <div className="doctor-dashboard">
+      <header className="dashboard-header">
+        <h1>Welcome, Dr. {doctorName}</h1>
         <button className="logout-btn" onClick={handleLogout}>
-          Log Out
+          Logout
         </button>
-      </aside>
+      </header>
 
-      <main className="main-section">
-        <div className="topbar">
-          <p className="welcome-tag">Welcome back</p>
-          <h1 className="title">Doctor Dashboard</h1>
-          <p className="subtitle">
-            Manage appointments, availability, and your profile in one place.
-          </p>
-        </div>
+      <section className="appointments-section">
+        <h2>Booked Appointments</h2>
 
-        <section className="hero-card">
-          <div className="hero-text">
-            <span className="hero-badge">Smart Appointment Management</span>
+        {appointments.length === 0 ? (
+          <p>No appointments booked yet.</p>
+        ) : (
+          <table className="appointments-table">
+            <thead>
+              <tr>
+                <th>Patient Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
 
-            <h2>Make your schedule clean, fast, and organized.</h2>
-
-            <p>
-              View appointments, update your available time slots, and keep your
-              practice running smoothly with a modern premium dashboard.
-            </p>
-
-            <div className="btn-group">
-              <button
-                className="primary-btn"
-                onClick={() => navigate("/appointment")}
-              >
-                Book Appointment
-              </button>
-
-              <button
-                className="secondary-btn"
-                onClick={() => navigate("/schedule")}
-              >
-                View Availability
-              </button>
-            </div>
-          </div>
-
-          <div className="hero-image-card">
-            <div className="hero-image-glow"></div>
-            <img
-              src="/doctor.jpg"
-              alt="Doctor Illustration"
-              className="doctor-image"
-            />
-          </div>
-        </section>
-
-        <section className="stats-grid">
-          <div className="info-card">
-            <h3>Appointments</h3>
-            <p>Check and manage all booked appointments quickly.</p>
-          </div>
-
-          <div className="info-card">
-            <h3>Schedule</h3>
-            <p>Update your available dates and time slots easily.</p>
-          </div>
-
-          <div className="info-card">
-            <h3>Profile</h3>
-            <p>Keep your doctor information updated and professional.</p>
-          </div>
-        </section>
-      </main>
+            <tbody>
+              {appointments.map((appt) => (
+                <tr key={appt.id}>
+                  <td>{appt.patients?.full_name}</td>
+                  <td>{appt.patients?.email}</td>
+                  <td>{appt.patients?.phone}</td>
+                  <td>{appt.date}</td>
+                  <td>{appt.time}</td>
+                  <td>{appt.reason}</td>
+                  <td>{appt.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   );
 };

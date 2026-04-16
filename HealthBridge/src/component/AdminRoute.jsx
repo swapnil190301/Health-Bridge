@@ -4,41 +4,34 @@ import { supabase } from "../supabaseClient";
 
 const AdminRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        setAllowed(false);
+        setIsAdmin(false);
         setLoading(false);
         return;
       }
 
       const { data, error } = await supabase
-        .from("doctors")
-        .select("id, is_admin")
+        .from("admins")
+        .select("id")
         .eq("id", user.id)
         .single();
 
-      if (error || !data || !data.is_admin) {
-        setAllowed(false);
-      } else {
-        setAllowed(true);
-      }
-
+      setIsAdmin(!error && data);
       setLoading(false);
     };
 
     checkAdmin();
   }, []);
 
-  if (loading) return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
+  if (loading) return <div>Loading...</div>;
 
-  return allowed ? children : <Navigate to="/admin-login" />;
+  return isAdmin ? children : <Navigate to="/admin-login" />;
 };
 
 export default AdminRoute;

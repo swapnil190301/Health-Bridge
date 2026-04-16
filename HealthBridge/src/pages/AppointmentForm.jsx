@@ -69,58 +69,83 @@ const AppointmentForm = () => {
     e.preventDefault();
     setMessage("");
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      // ✅ STEP 1: Get logged-in user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      setMessage("Please login first.");
-      return;
+      console.log("LOGGED USER:", user);
+
+      if (!user) {
+        setMessage("Please login first.");
+        return;
+      }
+
+      // ✅ STEP 2: CHECK if user exists in PATIENTS table (🔥 MAIN FIX)
+      const { data: patientData, error: patientError } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (patientError) {
+        console.error("Patient check error:", patientError);
+      }
+
+      if (!patientData) {
+        setMessage("You are not registered as a patient.");
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (!selectedDoctor) {
+        setMessage("Please select a doctor.");
+        return;
+      }
+
+      if (!selectedSlot) {
+        setMessage("Please select a slot.");
+        return;
+      }
+
+      // ✅ STEP 3: Insert appointment
+      const { error: appointmentError } = await supabase
+        .from("appointments")
+        .insert({
+          patient_id: user.id, // ✅ FIXED (must match patients table)
+          doctor_id: selectedDoctor,
+          slot_id: selectedSlot.id,
+          patients_name: patientName,
+          patient_age: Number(patientAge),
+          illness: illness,
+          appointment_date: selectedSlot.slot_date,
+          appointment_time: selectedSlot.slot_time,
+          status: "booked",
+        });
+
+      if (appointmentError) throw appointmentError;
+
+      // ✅ STEP 4: Update slot
+      const { error: slotUpdateError } = await supabase
+        .from("doctor_slots")
+        .update({ is_booked: true })
+        .eq("id", selectedSlot.id);
+
+      if (slotUpdateError) throw slotUpdateError;
+
+      setMessage("Appointment booked successfully.");
+
+      setPatientName("");
+      setPatientAge("");
+      setIllness("");
+      setSelectedSlot(null);
+
+      fetchSlots(selectedDoctor);
+    } catch (error) {
+      console.error("Booking Error:", error);
+      setMessage(error.message);
     }
-
-    if (!selectedDoctor) {
-      setMessage("Please select a doctor.");
-      return;
-    }
-
-    if (!selectedSlot) {
-      setMessage("Please select a slot.");
-      return;
-    }
-
-    const { error: appointmentError } = await supabase.from("appointments").insert({
-      patient_id: user.id,
-      doctor_id: selectedDoctor,
-      slot_id: selectedSlot.id,
-      patients_name: patientName,
-      patient_age: Number(patientAge),
-      illness: illness,
-      appointment_date: selectedSlot.slot_date,
-      appointment_time: selectedSlot.slot_time,
-      status: "booked",
-    });
-
-    if (appointmentError) {
-      setMessage(appointmentError.message);
-      return;
-    }
-
-    const { error: slotUpdateError } = await supabase
-      .from("doctor_slots")
-      .update({ is_booked: true })
-      .eq("id", selectedSlot.id);
-
-    if (slotUpdateError) {
-      setMessage(slotUpdateError.message);
-      return;
-    }
-
-    setMessage("Appointment booked successfully.");
-    setPatientName("");
-    setPatientAge("");
-    setIllness("");
-    setSelectedSlot(null);
-    fetchSlots(selectedDoctor);
   };
 
   return (
@@ -148,115 +173,56 @@ const AppointmentForm = () => {
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
                     {doctor.full_name} -{" "}
-                    {doctor.specialization || doctor.specialty || "Doctor"}
+                    {doctor.specialization || "Doctor"}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="form-grid">
-              <div className="form-group">
-                <label>Patient Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter patient's full name"
-                  value={patientName}
-                  onChange={(e) => setPatientName(e.target.value)}
-                  required
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Patient Name"
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                required
+              />
 
-              <div className="form-group">
-                <label>Patient Age</label>
-                <input
-                  type="number"
-                  placeholder="Enter patient's age"
-                  value={patientAge}
-                  onChange={(e) => setPatientAge(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Description About Illness</label>
-              <textarea
-                placeholder="Describe the illness"
-                value={illness}
-                onChange={(e) => setIllness(e.target.value)}
+              <input
+                type="number"
+                placeholder="Patient Age"
+                value={patientAge}
+                onChange={(e) => setPatientAge(e.target.value)}
                 required
               />
             </div>
 
-            <div className="slots-section">
-              <div className="section-title-row">
-                <h2>Available Slots</h2>
-                <span className="slot-note">Pick one slot to continue</span>
-              </div>
+            <textarea
+              placeholder="Describe illness"
+              value={illness}
+              onChange={(e) => setIllness(e.target.value)}
+              required
+            />
 
-              {availableSlots.length === 0 ? (
-                <p className="no-slots">No slots available for this doctor.</p>
-              ) : (
-                <div className="slot-grid">
-                  {availableSlots.map((slot) => (
-                    <button
-                      type="button"
-                      key={slot.id}
-                      className={`slot-card ${
-                        selectedSlot?.id === slot.id ? "selected-slot" : ""
-                      }`}
-                      onClick={() => setSelectedSlot(slot)}
-                    >
-                      <span className="slot-date">{formatDate(slot.slot_date)}</span>
-                      <span className="slot-time">{formatTime(slot.slot_time)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="slot-grid">
+              {availableSlots.map((slot) => (
+                <button
+                  key={slot.id}
+                  type="button"
+                  onClick={() => setSelectedSlot(slot)}
+                >
+                  {formatDate(slot.slot_date)} -{" "}
+                  {formatTime(slot.slot_time)}
+                </button>
+              ))}
             </div>
 
             <button type="submit" className="book-btn">
               Book Slot
             </button>
 
-            {message && (
-              <p
-                className={`form-message ${
-                  message.toLowerCase().includes("success") ? "success" : "error"
-                }`}
-              >
-                {message}
-              </p>
-            )}
+            {message && <p className="error">{message}</p>}
           </form>
-        </div>
-
-        <div className="appointment-right">
-          <div className="info-card tips-card">
-            <h2>Quick Tips</h2>
-            <ul>
-              <li>Select the doctor first to view live slots.</li>
-              <li>Choose a suitable date and time before booking.</li>
-              <li>Enter patient details carefully for correct records.</li>
-              <li>Booked slots disappear automatically.</li>
-            </ul>
-          </div>
-
-          <div className="info-card highlight-card">
-            <h2>Why book with us?</h2>
-            <p>
-              Fast doctor selection, real-time slot availability, smooth booking,
-              and better appointment management in one place.
-            </p>
-          </div>
-
-          <div className="info-card support-card">
-            <h2>Need help?</h2>
-            <p>
-              Select a doctor, choose your slot, and complete the form. Your
-              appointment gets saved instantly after booking.
-            </p>
-          </div>
         </div>
       </div>
     </div>
