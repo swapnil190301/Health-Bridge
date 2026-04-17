@@ -46,6 +46,10 @@ const Signin = () => {
         .eq("id", user.id)
         .single();
 
+      const isNoRow = (err) => err?.code === "PGRST116";
+      if (patientError && !isNoRow(patientError)) throw patientError;
+      if (doctorError && !isNoRow(doctorError)) throw doctorError;
+
       console.log("Patient:", patient);
       console.log("Doctor:", doctor);
 

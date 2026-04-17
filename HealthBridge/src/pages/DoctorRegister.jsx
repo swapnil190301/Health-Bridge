@@ -1,11 +1,9 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import "./css/Auth.css";
 
 const DoctorRegister = () => {
-  const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     full_name: "",
     specialization: "",
