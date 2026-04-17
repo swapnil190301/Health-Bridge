@@ -22,30 +22,19 @@ const DoctorDashboard = () => {
       return;
     }
 
-    const { data: doctor, error: doctorError } = await supabase
+    const { data: doctor } = await supabase
       .from("doctors")
       .select("id, full_name")
       .eq("id", user.id)
       .single();
 
-    if (doctorError || !doctor) return;
+    if (!doctor) return;
 
     setDoctorName(doctor.full_name);
 
     const { data, error } = await supabase
       .from("appointments")
-      .select(`
-        id,
-        appointment_date,
-        appointment_time,
-        status,
-        reason,
-        patients (
-          full_name,
-          email,
-          phone
-        )
-      `)
+      .select("*")
       .eq("doctor_id", doctor.id);
 
     if (!error) setAppointments(data || []);
@@ -59,7 +48,6 @@ const DoctorDashboard = () => {
   return (
     <div className="doctor-dashboard">
 
-      {/* HEADER */}
       <div className="dashboard-header glass">
         <div>
           <p className="welcome-text">Welcome back 👋</p>
@@ -71,7 +59,6 @@ const DoctorDashboard = () => {
         </button>
       </div>
 
-      {/* APPOINTMENTS */}
       <section className="appointments-section glass">
         <div className="section-header">
           <h2>Booked Appointments</h2>
@@ -87,10 +74,10 @@ const DoctorDashboard = () => {
             <thead>
               <tr>
                 <th>Patient</th>
-                <th>Contact</th>
+                <th>Age</th>
                 <th>Date</th>
                 <th>Time</th>
-                <th>Reason</th>
+                <th>Illness</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -98,18 +85,11 @@ const DoctorDashboard = () => {
             <tbody>
               {appointments.map((appt) => (
                 <tr key={appt.id}>
-                  <td>
-                    <strong>{appt.patients?.full_name || "N/A"}</strong>
-                  </td>
-
-                  <td>
-                    <div>{appt.patients?.email || "N/A"}</div>
-                    <small>{appt.patients?.phone || ""}</small>
-                  </td>
-
+                  <td>{appt.patients_name || "N/A"}</td>
+                  <td>{appt.patient_age || "-"}</td>
                   <td>{appt.appointment_date}</td>
                   <td>{appt.appointment_time}</td>
-                  <td>{appt.reason || "-"}</td>
+                  <td>{appt.illness || "-"}</td>
 
                   <td>
                     <span className={`status ${appt.status}`}>

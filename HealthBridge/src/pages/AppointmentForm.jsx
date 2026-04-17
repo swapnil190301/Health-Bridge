@@ -13,6 +13,8 @@ const AppointmentForm = () => {
   const [illness, setIllness] = useState("");
   const [message, setMessage] = useState("");
 
+  const [loading, setLoading] = useState(false); // ✅ NEW
+
   useEffect(() => {
     fetchDoctors();
   }, []);
@@ -35,7 +37,7 @@ const AppointmentForm = () => {
       .from("doctor_slots")
       .select("*")
       .eq("doctor_id", doctorId)
-      .eq("is_booked", false)
+      .eq("is_booked", false) // ✅ Only free slots
       .order("slot_date", { ascending: true })
       .order("slot_time", { ascending: true });
 
@@ -65,13 +67,17 @@ const AppointmentForm = () => {
   const bookAppointment = async (e) => {
     e.preventDefault();
     setMessage("");
+    setLoading(true);
 
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) return setMessage("Please login first.");
+      if (!user) {
+        setLoading(false);
+        return setMessage("Please login first.");
+      }
 
       const { data: patientData } = await supabase
         .from("patients")
@@ -79,12 +85,36 @@ const AppointmentForm = () => {
         .eq("id", user.id)
         .maybeSingle();
 
-      if (!patientData)
+      if (!patientData) {
+        setLoading(false);
         return setMessage("You are not registered as a patient.");
+      }
 
-      if (!selectedDoctor) return setMessage("Select doctor");
-      if (!selectedSlot) return setMessage("Select slot");
+      if (!selectedDoctor) {
+        setLoading(false);
+        return setMessage("Select doctor");
+      }
 
+      if (!selectedSlot) {
+        setLoading(false);
+        return setMessage("Select slot");
+      }
+
+      console.log("Selected Slot:", selectedSlot); // ✅ DEBUG
+
+      // 🔥 Prevent double booking
+      const { data: existing } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("slot_id", selectedSlot.id)
+        .eq("status", "booked");
+
+      if (existing.length > 0) {
+        setLoading(false);
+        return setMessage("❌ Slot already booked");
+      }
+
+      // ✅ Insert appointment
       const { error } = await supabase.from("appointments").insert({
         patient_id: user.id,
         doctor_id: selectedDoctor,
@@ -99,29 +129,40 @@ const AppointmentForm = () => {
 
       if (error) throw error;
 
-      await supabase
+      // ✅ UPDATED SAFE SLOT UPDATE (YOUR FIX)
+      const { error: slotError } = await supabase
         .from("doctor_slots")
         .update({ is_booked: true })
-        .eq("id", selectedSlot.id);
+        .eq("id", selectedSlot.id)
+        .select();
+
+      if (slotError) {
+        console.log("Slot update failed:", slotError);
+        setLoading(false);
+        return setMessage("Slot update failed");
+      }
 
       setMessage("✅ Appointment booked successfully");
 
+      // Reset form
       setPatientName("");
       setPatientAge("");
       setIllness("");
       setSelectedSlot(null);
 
-      fetchSlots(selectedDoctor);
+      fetchSlots(selectedDoctor); // refresh slots
     } catch (err) {
+      console.log(err);
       setMessage(err.message);
     }
+
+    setLoading(false);
   };
 
   return (
     <div className="appointment-page">
       <div className="appointment-wrapper">
 
-        {/* LEFT */}
         <div className="appointment-left">
           <div className="appointment-header">
             <span className="badge">Health Bridge Clinic</span>
@@ -130,7 +171,6 @@ const AppointmentForm = () => {
 
           <form className="appointment-form" onSubmit={bookAppointment}>
 
-            {/* Doctor */}
             <div className="form-group">
               <label>Select Doctor</label>
               <select
@@ -146,7 +186,6 @@ const AppointmentForm = () => {
               </select>
             </div>
 
-            {/* Inputs */}
             <div className="form-grid">
               <input
                 type="text"
@@ -168,7 +207,6 @@ const AppointmentForm = () => {
               onChange={(e) => setIllness(e.target.value)}
             />
 
-            {/* SLOTS */}
             <div className="slots-section">
               <div className="section-title-row">
                 <h2>Available Slots</h2>
@@ -199,7 +237,9 @@ const AppointmentForm = () => {
               )}
             </div>
 
-            <button className="book-btn">Book Slot</button>
+            <button className="book-btn" disabled={loading}>
+              {loading ? "Booking..." : "Book Slot"}
+            </button>
 
             {message && (
               <p
@@ -213,7 +253,6 @@ const AppointmentForm = () => {
           </form>
         </div>
 
-        {/* RIGHT */}
         <div className="appointment-right">
           <div className="info-card highlight-card">
             <h2>Why book with us?</h2>

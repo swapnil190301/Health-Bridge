@@ -30,10 +30,10 @@ const MyAppointments = () => {
         status,
         doctors ( full_name, specialization )
       `)
-      .eq("user_id", user.id)
+      .eq("patient_id", user.id)   // ✅ FIXED
       .order("appointment_date", { ascending: true });
 
-    if (!error) setAppointments(data);
+    if (!error) setAppointments(data || []);
   };
 
   const handleCancel = async (id) => {
@@ -54,14 +54,11 @@ const MyAppointments = () => {
 
   return (
     <div className="appointments-page">
-
-      {/* HERO */}
       <div className="appointments-hero">
         <h1>My Appointments</h1>
         <p>Track and manage your health bookings</p>
       </div>
 
-      {/* CONTENT */}
       {appointments.length === 0 ? (
         <div className="empty-state">
           <div className="empty-card">
@@ -80,7 +77,6 @@ const MyAppointments = () => {
         <div className="appointments-grid">
           {appointments.map((appt) => (
             <div className="appointment-card" key={appt.id}>
-              
               <div className="card-top">
                 <div>
                   <h3>{appt.doctors?.full_name}</h3>
