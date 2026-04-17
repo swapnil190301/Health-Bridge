@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "./css/DoctorDashboard.css";
@@ -8,11 +8,7 @@ const DoctorDashboard = () => {
   const [doctorName, setDoctorName] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
-
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -38,7 +34,11 @@ const DoctorDashboard = () => {
       .eq("doctor_id", doctor.id);
 
     if (!error) setAppointments(data || []);
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

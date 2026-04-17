@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import "./css/MyAppointments.css";
@@ -7,11 +7,7 @@ const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
-
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -34,7 +30,11 @@ const MyAppointments = () => {
       .order("appointment_date", { ascending: true });
 
     if (!error) setAppointments(data || []);
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   const handleCancel = async (id) => {
     const confirm = window.confirm("Cancel this appointment?");

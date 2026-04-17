@@ -8,7 +8,7 @@ function BookAppointment() {
   const [time, setTime] = useState("");
 
   const bookAppointment = async () => {
-    const { data, error } = await supabase.from("appointments").insert([
+    const { error } = await supabase.from("appointments").insert([
       {
         patient_id: patientId,
         doctor_id: doctorId,
