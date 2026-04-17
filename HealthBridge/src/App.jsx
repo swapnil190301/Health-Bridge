@@ -10,6 +10,9 @@ import AboutDoctor from "./pages/AboutDoctor";
 import AppointmentForm from "./pages/AppointmentForm";
 import DoctorSchedule from "./pages/DoctorSchedule";
 
+/* ✅ NEW PAGE */
+import MyAppointments from "./pages/MyAppointments";
+
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRegister from "./pages/AdminRegister";
@@ -20,7 +23,7 @@ import DoctorSignin from "./pages/DoctorSignin";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import DoctorRoute from "./component/DoctorRoute";
 
-/* ✅ NEW */
+/* ✅ User Protected Route */
 import UserRoute from "./component/UserRoute";
 
 function App() {
@@ -53,7 +56,17 @@ function App() {
           }
         />
 
-        {/* Optional: protect these if needed */}
+        {/* ✅ NEW: My Appointments Page */}
+        <Route
+          path="/appointments"
+          element={
+            <UserRoute>
+              <MyAppointments />
+            </UserRoute>
+          }
+        />
+
+        {/* Optional protected pages */}
         <Route
           path="/about-doctor"
           element={

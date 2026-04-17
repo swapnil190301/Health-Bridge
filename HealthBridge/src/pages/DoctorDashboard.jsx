@@ -22,24 +22,22 @@ const DoctorDashboard = () => {
       return;
     }
 
-    // ✅ Fetch doctor name
-    const { data: doctorData } = await supabase
+    const { data: doctor, error: doctorError } = await supabase
       .from("doctors")
-      .select("full_name")
+      .select("id, full_name")
       .eq("id", user.id)
       .single();
 
-    if (doctorData) {
-      setDoctorName(doctorData.full_name);
-    }
+    if (doctorError || !doctor) return;
 
-    // ✅ Fetch appointments + patient details
+    setDoctorName(doctor.full_name);
+
     const { data, error } = await supabase
       .from("appointments")
       .select(`
         id,
-        date,
-        time,
+        appointment_date,
+        appointment_time,
         status,
         reason,
         patients (
@@ -48,16 +46,11 @@ const DoctorDashboard = () => {
           phone
         )
       `)
-      .eq("doctor_id", user.id);
+      .eq("doctor_id", doctor.id);
 
-    if (error) {
-      console.error("Error fetching appointments:", error);
-    } else {
-      setAppointments(data);
-    }
+    if (!error) setAppointments(data || []);
   };
 
-  // ✅ Logout OUTSIDE fetch
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/doctor-signin");
@@ -65,25 +58,36 @@ const DoctorDashboard = () => {
 
   return (
     <div className="doctor-dashboard">
-      <header className="dashboard-header">
-        <h1>Welcome, Dr. {doctorName}</h1>
+
+      {/* HEADER */}
+      <div className="dashboard-header glass">
+        <div>
+          <p className="welcome-text">Welcome back 👋</p>
+          <h1>Dr. {doctorName}</h1>
+        </div>
+
         <button className="logout-btn" onClick={handleLogout}>
           Logout
         </button>
-      </header>
+      </div>
 
-      <section className="appointments-section">
-        <h2>Booked Appointments</h2>
+      {/* APPOINTMENTS */}
+      <section className="appointments-section glass">
+        <div className="section-header">
+          <h2>Booked Appointments</h2>
+          <span>{appointments.length} Total</span>
+        </div>
 
         {appointments.length === 0 ? (
-          <p>No appointments booked yet.</p>
+          <div className="empty-state">
+            <p>No appointments booked yet.</p>
+          </div>
         ) : (
           <table className="appointments-table">
             <thead>
               <tr>
-                <th>Patient Name</th>
-                <th>Email</th>
-                <th>Phone</th>
+                <th>Patient</th>
+                <th>Contact</th>
                 <th>Date</th>
                 <th>Time</th>
                 <th>Reason</th>
@@ -94,13 +98,24 @@ const DoctorDashboard = () => {
             <tbody>
               {appointments.map((appt) => (
                 <tr key={appt.id}>
-                  <td>{appt.patients?.full_name}</td>
-                  <td>{appt.patients?.email}</td>
-                  <td>{appt.patients?.phone}</td>
-                  <td>{appt.date}</td>
-                  <td>{appt.time}</td>
-                  <td>{appt.reason}</td>
-                  <td>{appt.status}</td>
+                  <td>
+                    <strong>{appt.patients?.full_name || "N/A"}</strong>
+                  </td>
+
+                  <td>
+                    <div>{appt.patients?.email || "N/A"}</div>
+                    <small>{appt.patients?.phone || ""}</small>
+                  </td>
+
+                  <td>{appt.appointment_date}</td>
+                  <td>{appt.appointment_time}</td>
+                  <td>{appt.reason || "-"}</td>
+
+                  <td>
+                    <span className={`status ${appt.status}`}>
+                      {appt.status}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>

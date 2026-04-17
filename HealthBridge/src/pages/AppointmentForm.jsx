@@ -18,21 +18,20 @@ const AppointmentForm = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedDoctor) {
-      fetchSlots(selectedDoctor);
-    } else {
+    if (selectedDoctor) fetchSlots(selectedDoctor);
+    else {
       setAvailableSlots([]);
       setSelectedSlot(null);
     }
   }, [selectedDoctor]);
 
   const fetchDoctors = async () => {
-    const { data, error } = await supabase.from("doctors").select("*");
-    if (!error) setDoctors(data || []);
+    const { data } = await supabase.from("doctors").select("*");
+    setDoctors(data || []);
   };
 
   const fetchSlots = async (doctorId) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("doctor_slots")
       .select("*")
       .eq("doctor_id", doctorId)
@@ -40,11 +39,10 @@ const AppointmentForm = () => {
       .order("slot_date", { ascending: true })
       .order("slot_time", { ascending: true });
 
-    if (!error) setAvailableSlots(data || []);
+    setAvailableSlots(data || []);
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -54,7 +52,6 @@ const AppointmentForm = () => {
   };
 
   const formatTime = (timeString) => {
-    if (!timeString) return "";
     const [hours, minutes] = timeString.split(":");
     const date = new Date();
     date.setHours(Number(hours), Number(minutes), 0);
@@ -70,71 +67,44 @@ const AppointmentForm = () => {
     setMessage("");
 
     try {
-      // ✅ STEP 1: Get logged-in user
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      console.log("LOGGED USER:", user);
+      if (!user) return setMessage("Please login first.");
 
-      if (!user) {
-        setMessage("Please login first.");
-        return;
-      }
-
-      // ✅ STEP 2: CHECK if user exists in PATIENTS table (🔥 MAIN FIX)
-      const { data: patientData, error: patientError } = await supabase
+      const { data: patientData } = await supabase
         .from("patients")
         .select("id")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (patientError) {
-        console.error("Patient check error:", patientError);
-      }
+      if (!patientData)
+        return setMessage("You are not registered as a patient.");
 
-      if (!patientData) {
-        setMessage("You are not registered as a patient.");
-        await supabase.auth.signOut();
-        return;
-      }
+      if (!selectedDoctor) return setMessage("Select doctor");
+      if (!selectedSlot) return setMessage("Select slot");
 
-      if (!selectedDoctor) {
-        setMessage("Please select a doctor.");
-        return;
-      }
+      const { error } = await supabase.from("appointments").insert({
+        patient_id: user.id,
+        doctor_id: selectedDoctor,
+        slot_id: selectedSlot.id,
+        patients_name: patientName,
+        patient_age: Number(patientAge),
+        illness,
+        appointment_date: selectedSlot.slot_date,
+        appointment_time: selectedSlot.slot_time,
+        status: "booked",
+      });
 
-      if (!selectedSlot) {
-        setMessage("Please select a slot.");
-        return;
-      }
+      if (error) throw error;
 
-      // ✅ STEP 3: Insert appointment
-      const { error: appointmentError } = await supabase
-        .from("appointments")
-        .insert({
-          patient_id: user.id, // ✅ FIXED (must match patients table)
-          doctor_id: selectedDoctor,
-          slot_id: selectedSlot.id,
-          patients_name: patientName,
-          patient_age: Number(patientAge),
-          illness: illness,
-          appointment_date: selectedSlot.slot_date,
-          appointment_time: selectedSlot.slot_time,
-          status: "booked",
-        });
-
-      if (appointmentError) throw appointmentError;
-
-      // ✅ STEP 4: Update slot
-      const { error: slotUpdateError } = await supabase
+      await supabase
         .from("doctor_slots")
         .update({ is_booked: true })
         .eq("id", selectedSlot.id);
 
-      if (slotUpdateError) throw slotUpdateError;
-
-      setMessage("Appointment booked successfully.");
+      setMessage("✅ Appointment booked successfully");
 
       setPatientName("");
       setPatientAge("");
@@ -142,58 +112,53 @@ const AppointmentForm = () => {
       setSelectedSlot(null);
 
       fetchSlots(selectedDoctor);
-    } catch (error) {
-      console.error("Booking Error:", error);
-      setMessage(error.message);
+    } catch (err) {
+      setMessage(err.message);
     }
   };
 
   return (
     <div className="appointment-page">
       <div className="appointment-wrapper">
+
+        {/* LEFT */}
         <div className="appointment-left">
           <div className="appointment-header">
             <span className="badge">Health Bridge Clinic</span>
             <h1>Schedule Your Appointment</h1>
-            <p>
-              Choose your doctor, fill in the patient details, and reserve a slot
-              in a few simple steps.
-            </p>
           </div>
 
           <form className="appointment-form" onSubmit={bookAppointment}>
+
+            {/* Doctor */}
             <div className="form-group">
               <label>Select Doctor</label>
               <select
                 value={selectedDoctor}
                 onChange={(e) => setSelectedDoctor(e.target.value)}
-                required
               >
                 <option value="">Choose a doctor</option>
-                {doctors.map((doctor) => (
-                  <option key={doctor.id} value={doctor.id}>
-                    {doctor.full_name} -{" "}
-                    {doctor.specialization || "Doctor"}
+                {doctors.map((doc) => (
+                  <option key={doc.id} value={doc.id}>
+                    {doc.full_name}
                   </option>
                 ))}
               </select>
             </div>
 
+            {/* Inputs */}
             <div className="form-grid">
               <input
                 type="text"
                 placeholder="Patient Name"
                 value={patientName}
                 onChange={(e) => setPatientName(e.target.value)}
-                required
               />
-
               <input
                 type="number"
                 placeholder="Patient Age"
                 value={patientAge}
                 onChange={(e) => setPatientAge(e.target.value)}
-                required
               />
             </div>
 
@@ -201,29 +166,72 @@ const AppointmentForm = () => {
               placeholder="Describe illness"
               value={illness}
               onChange={(e) => setIllness(e.target.value)}
-              required
             />
 
-            <div className="slot-grid">
-              {availableSlots.map((slot) => (
-                <button
-                  key={slot.id}
-                  type="button"
-                  onClick={() => setSelectedSlot(slot)}
-                >
-                  {formatDate(slot.slot_date)} -{" "}
-                  {formatTime(slot.slot_time)}
-                </button>
-              ))}
+            {/* SLOTS */}
+            <div className="slots-section">
+              <div className="section-title-row">
+                <h2>Available Slots</h2>
+                <span className="slot-note">Pick one slot to continue</span>
+              </div>
+
+              {availableSlots.length === 0 ? (
+                <p className="no-slots">No slots available</p>
+              ) : (
+                <div className="slot-grid">
+                  {availableSlots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      className={`slot-card ${
+                        selectedSlot?.id === slot.id ? "selected-slot" : ""
+                      }`}
+                      onClick={() => setSelectedSlot(slot)}
+                    >
+                      <div className="slot-date">
+                        {formatDate(slot.slot_date)}
+                      </div>
+                      <div className="slot-time">
+                        {formatTime(slot.slot_time)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <button type="submit" className="book-btn">
-              Book Slot
-            </button>
+            <button className="book-btn">Book Slot</button>
 
-            {message && <p className="error">{message}</p>}
+            {message && (
+              <p
+                className={`form-message ${
+                  message.includes("success") ? "success" : "error"
+                }`}
+              >
+                {message}
+              </p>
+            )}
           </form>
         </div>
+
+        {/* RIGHT */}
+        <div className="appointment-right">
+          <div className="info-card highlight-card">
+            <h2>Why book with us?</h2>
+            <p>
+              Fast doctor selection, real-time slot availability, smooth booking,
+              and better appointment management in one place.
+            </p>
+          </div>
+
+          <div className="info-card support-card">
+            <h2>Need help?</h2>
+            <p>
+              Select a doctor, choose your slot, and complete the form.
+              Your appointment gets saved instantly after booking.
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );

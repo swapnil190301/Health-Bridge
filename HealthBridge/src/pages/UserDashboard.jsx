@@ -19,11 +19,11 @@ const UserDashboard = () => {
 
   return (
     <div className="dashboard-wrapper">
+
+      {/* MOBILE MENU */}
       <button
         className={`mobile-menu-btn ${menuOpen ? "active" : ""}`}
         onClick={() => setMenuOpen(!menuOpen)}
-        aria-label="Toggle menu"
-        aria-expanded={menuOpen}
       >
         <span></span>
         <span></span>
@@ -32,54 +32,32 @@ const UserDashboard = () => {
 
       {menuOpen && <div className="mobile-overlay" onClick={closeMenu}></div>}
 
+      {/* SIDEBAR */}
       <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
         <div className="sidebar-content">
+
           <div className="sidebar-top">
             <div className="logo-circle">
-              <img
-                src="/logo.png"
-                alt="Health Bridge Logo"
-                className="logo-img"
-              />
+              <img src="/logo.png" alt="logo" className="logo-img" />
             </div>
 
             <div className="brand-text">
               <h2>Health Bridge</h2>
-              <p>Doctor Panel</p>
+              <p>User Panel</p> {/* ✅ FIXED */}
             </div>
           </div>
 
           <nav className="menu">
-            <NavLink
-              to="/user-dashboard"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
+            <NavLink to="/user-dashboard" className={getMenuClass} onClick={closeMenu}>
               Home
             </NavLink>
 
-            <NavLink
-              to="/about-doctor"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
-              Doctor Profile
+            <NavLink to="/appointment" className={getMenuClass} onClick={closeMenu}>
+              Book Appointment
             </NavLink>
 
-            <NavLink
-              to="/schedule"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
-              Schedule
-            </NavLink>
-
-            <NavLink
-              to="/appointment"
-              className={getMenuClass}
-              onClick={closeMenu}
-            >
-              Appointments
+            <NavLink to="/appointments" className={getMenuClass} onClick={closeMenu}>
+              My Appointments
             </NavLink>
           </nav>
         </div>
@@ -89,24 +67,30 @@ const UserDashboard = () => {
         </button>
       </aside>
 
+      {/* MAIN */}
       <main className="main-section">
         <div className="topbar">
-          <p className="welcome-tag">Welcome back</p>
-          <h1 className="title">Doctor Dashboard</h1>
+          <p className="welcome-tag">Welcome back 👋</p>
+
+          {/* ❌ OLD: Doctor Dashboard */}
+          {/* ✅ NEW */}
+          <h1 className="title">User Dashboard</h1>
+
           <p className="subtitle">
-            Manage appointments, availability, and your profile in one place.
+            Book appointments, track your visits, and manage your health in one place.
           </p>
         </div>
 
+        {/* HERO */}
         <section className="hero-card">
           <div className="hero-text">
-            <span className="hero-badge">Smart Appointment Management</span>
+            <span className="hero-badge">Smart Healthcare Experience</span>
 
-            <h2>Make your schedule clean, fast, and organized.</h2>
+            <h2>Book your appointments quickly and effortlessly.</h2>
 
             <p>
-              View appointments, update your available time slots, and keep your
-              practice running smoothly with a modern premium dashboard.
+              Choose your doctor, select a time slot, and manage your bookings
+              with a clean and modern experience.
             </p>
 
             <div className="btn-group">
@@ -119,9 +103,9 @@ const UserDashboard = () => {
 
               <button
                 className="secondary-btn"
-                onClick={() => navigate("/schedule")}
+                onClick={() => navigate("/appointments")}
               >
-                View Availability
+                View My Appointments
               </button>
             </div>
           </div>
@@ -130,28 +114,30 @@ const UserDashboard = () => {
             <div className="hero-image-glow"></div>
             <img
               src="/doctor.jpg"
-              alt="Doctor Illustration"
+              alt="doctor"
               className="doctor-image"
             />
           </div>
         </section>
 
+        {/* STATS */}
         <section className="stats-grid">
           <div className="info-card">
-            <h3>Appointments</h3>
-            <p>Check and manage all booked appointments quickly.</p>
+            <h3>Book Appointment</h3>
+            <p>Schedule a new appointment with your preferred doctor.</p>
           </div>
 
           <div className="info-card">
-            <h3>Schedule</h3>
-            <p>Update your available dates and time slots easily.</p>
+            <h3>My Bookings</h3>
+            <p>View and manage all your upcoming appointments.</p>
           </div>
 
           <div className="info-card">
-            <h3>Profile</h3>
-            <p>Keep your doctor information updated and professional.</p>
+            <h3>Health Records</h3>
+            <p>Keep track of your consultations and history.</p>
           </div>
         </section>
+
       </main>
     </div>
   );

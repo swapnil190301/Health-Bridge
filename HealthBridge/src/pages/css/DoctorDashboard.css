@@ -1,54 +1,197 @@
-.doctor-dashboard {
-  padding: 40px;
-  background: #f4f7fb;
-  min-height: 100vh;
-  font-family: Arial, sans-serif;
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+/* BODY */
+body {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #eef2ff, #f8fbff);
+  color: #0f172a;
+}
+
+/* PAGE */
+.doctor-dashboard {
+  min-height: 100vh;
+  padding: 40px;
+}
+
+/* GLASS EFFECT */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(18px);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* HEADER */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+
+  padding: 20px 30px;
+  margin-bottom: 25px;
+
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(15px);
+
+  box-shadow: 0 15px 30px rgba(0,0,0,0.08);
 }
 
 .dashboard-header h1 {
-  color: #1e3a8a;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
 }
 
+/* WELCOME TEXT */
+.welcome-text {
+  font-size: 14px;
+  color: #3b82f6;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+/* VERIFIED BADGE */
+.verified-badge {
+  font-size: 14px;
+  margin-left: 8px;
+  color: #22c55e;
+}
+
+/* LOGOUT BUTTON */
 .logout-btn {
-  background: #ef4444;
-  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+  color: white;
+  font-weight: 600;
   cursor: pointer;
+
+  width: auto;
+  min-width: 120px;
+  max-width: 160px;
+
+  transition: 0.3s ease;
 }
 
 .logout-btn:hover {
-  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
 }
 
+/* SECTION */
 .appointments-section {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 25px;
 }
 
+/* SECTION HEADER */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.section-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.section-header span {
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* TABLE */
 .appointments-table {
   width: 100%;
   border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-.appointments-table th,
-.appointments-table td {
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
-  text-align: left;
-}
-
+/* TABLE HEADER */
 .appointments-table th {
-  background: #1e3a8a;
-  color: #fff;
+  background: linear-gradient(90deg, #2563eb, #1e40af);
+  color: white;
+  padding: 14px;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* TABLE BODY */
+.appointments-table td {
+  padding: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #334155;
+}
+
+/* ROW HOVER */
+.appointments-table tr:hover {
+  background: #f1f5ff;
+  transition: 0.2s;
+}
+
+/* SMALL TEXT */
+.appointments-table small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* STATUS BADGE */
+.status {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* STATUS COLORS */
+.status.booked {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.status.completed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status.cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  padding: 30px;
+  text-align: center;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .doctor-dashboard {
+    padding: 20px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .appointments-table th,
+  .appointments-table td {
+    padding: 10px;
+    font-size: 13px;
+  }
 }
