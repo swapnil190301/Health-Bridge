@@ -5,6 +5,7 @@ import "./css/MyAppointments.css";
 
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
   const navigate = useNavigate();
 
   const fetchAppointments = useCallback(async () => {
@@ -17,19 +18,54 @@ const MyAppointments = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    setFetchError(null);
+
+    // Fetch rows without embedding "doctors" — nested selects require a FK in Supabase;
+    // if the relationship isn't set up, the whole query fails and the list stays empty.
+    const { data: rows, error } = await supabase
       .from("appointments")
-      .select(`
-        id,
-        appointment_date,
-        appointment_time,
-        status,
-        doctors ( full_name, specialization )
-      `)
-      .eq("patient_id", user.id)   // ✅ FIXED
+      .select("id, appointment_date, appointment_time, status, doctor_id")
+      .eq("patient_id", user.id)
       .order("appointment_date", { ascending: true });
 
-    if (!error) setAppointments(data || []);
+    if (error) {
+      console.error("MyAppointments load failed:", error);
+      setFetchError(error.message || "Could not load appointments.");
+      setAppointments([]);
+      return;
+    }
+
+    const list = rows || [];
+    if (list.length === 0) {
+      setAppointments([]);
+      return;
+    }
+
+    const doctorIds = [...new Set(list.map((r) => r.doctor_id).filter(Boolean))];
+    let doctorById = {};
+
+    if (doctorIds.length > 0) {
+      const { data: docs, error: docErr } = await supabase
+        .from("doctors")
+        .select("id, full_name, specialization")
+        .in("id", doctorIds);
+
+      if (docErr) {
+        console.error("MyAppointments doctors load failed:", docErr);
+        setFetchError(docErr.message || "Could not load doctor details.");
+      } else {
+        (docs || []).forEach((d) => {
+          doctorById[d.id] = d;
+        });
+      }
+    }
+
+    setAppointments(
+      list.map((a) => ({
+        ...a,
+        doctors: doctorById[a.doctor_id] ?? null,
+      }))
+    );
   }, [navigate]);
 
   useEffect(() => {
@@ -59,7 +95,11 @@ const MyAppointments = () => {
         <p>Track and manage your health bookings</p>
       </div>
 
-      {appointments.length === 0 ? (
+      {fetchError && (
+        <p className="appointments-fetch-error">{fetchError}</p>
+      )}
+
+      {appointments.length === 0 && !fetchError ? (
         <div className="empty-state">
           <div className="empty-card">
             <div className="empty-icon">📅</div>
@@ -73,7 +113,7 @@ const MyAppointments = () => {
             </button>
           </div>
         </div>
-      ) : (
+      ) : appointments.length > 0 ? (
         <div className="appointments-grid">
           {appointments.map((appt) => (
             <div className="appointment-card" key={appt.id}>
@@ -106,7 +146,7 @@ const MyAppointments = () => {
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
